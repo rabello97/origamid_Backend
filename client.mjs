@@ -1,54 +1,43 @@
-const produtosRespo = await fetch("http://localhost:3000/produtos");
-const produtos = await produtosRespo.json();
-console.log("produtos", produtos);
-console.log("produtosRespo", produtosRespo);
+const base = "http://localhost:3000";
 
-// const notebookRespo = await fetch(
-//   "http://localhost:3000/produto?categoria=eletronicos&slug=notebook",
+fetch(`${base}/cursos`, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    nome: "HTML Completo",
+    slug: "html-completo",
+    descricao: "Curso de HTML Completo",
+  }),
+});
+
+fetch(`${base}/aulas`, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    slug: "arrays",
+    nome: "Arrays em JavaScript",
+    cursoSlug: "javascript",
+  }),
+});
+
+const aula = await fetch(base + "/aula?curso=javascript&slug=arrays").then(
+  (res) => res.json(),
+);
+console.log(aula);
+
+// const aulas = await fetch(base + "/aulas?curso=javascript").then((res) =>
+//   res.json(),
 // );
-// const notebook = await notebookRespo.text();
-// console.log("notebook", notebook);
+// console.log(aulas);
 
-const response = await fetch("http://localhost:3000/produtos", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    nome: "Notebook",
-    slug: "notebook",
-    categoria: "eletronicos",
-    preco: 4000,
-  }),
-});
+// const curso = await fetch(base + "/curso?slug=javascript").then((res) =>
+//   res.json(),
+// );
+// console.log(curso);
 
-// console.log(response);
-
-const body = await response.text();
-// console.log(body);
-
-await fetch("http://localhost:3000/produtos", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    nome: "Mesa",
-    slug: "mesa",
-    categoria: "moveis",
-    preco: 4000,
-  }),
-});
-
-await fetch("http://localhost:3000/produtos", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    nome: "Mouse",
-    slug: "mouse",
-    categoria: "eletronicos",
-    preco: 100,
-  }),
-});
+const cursos = await fetch(base + "/cursos").then((res) => res.json());
+// console.log(cursos);

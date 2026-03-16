@@ -1,40 +1,119 @@
 import { DatabaseSync } from "node:sqlite";
 
-const db = new DatabaseSync("./db.sqlite");
+const db = new DatabaseSync("./lms.sqlite");
 
 db.exec(/*sql*/ `
-  PRAGMA foreign_keys = 1;
-  PRAGMA journal_mode = WAL;
-  PRAGMA synchronous = NORMAL;
+    PRAGMA foreign_keys = 1;
+    PRAGMA journal_mode = WAL;
+    PRAGMA synchronous = NORMAL;
 
-  PRAGMA cache_size = 2000;
-  PRAGMA busy_timeout = 5000;
-  PRAGMA temp_store = MEMORY;
+    PRAGMA cache_size = 2000;
+    PRAGMA busy_timeout = 5000;
+    PRAGMA temp_store = MEMORY;
 `);
 
 db.exec(/*sql*/ `
-    CREATE TABLE IF NOT EXISTS "produtos" (
-        "slug" TEXT PRIMARY KEY,
-        "nome" TEXT NOT NULL,
-        "categoria" TEXT NOT NULL,
-        "preco" INTEGER NOT NULL
-    );
+    CREATE TABLE IF NOT EXISTS "cursos" (
+      "id" INTEGER PRIMARY KEY,
+      "slug" TEXT NOT NULL COLLATE NOCASE UNIQUE,
+      "nome" TEXT NOT NULL,
+      "descricao" TEXT NOT NULL
+    ) STRICT;
   `);
 
-const insert = db.prepare(
-  /*sql*/
-  `
-    INSERT OR IGNORE INTO "produtos" (slug, nome, categoria, preco) VALUES (?, ?, ?, ?)
-  `,
-);
-insert.run("notebook", "Notebook", "eletronicos", 4000);
-insert.run("mesa", "Mesa", "moveis", 2000);
-insert.run("mouse", "Mouse", "eletronicos", 100);
+db.exec(/*sql*/ `
+    CREATE TABLE IF NOT EXISTS "aulas" (
+      "id" INTEGER PRIMARY KEY,
+      "curso_id" INTEGER NOT NULL,
+      "slug" TEXT NOT NULL COLLATE NOCASE,
+      "nome" TEXT NOT NULL,
+      FOREIGN KEY("curso_id") REFERENCES "cursos" ("id"),
+      UNIQUE("curso_id", "slug")
+    ) STRICT;
+  `);
 
-const produtos = db.prepare(`SELECT * FROM "produtos"`).all();
-// console.log(produtos);
+export function criarCurso({ slug, nome, descricao }) {
+  try {
+    return db
+      .prepare(
+        /*sql*/ `
+      INSERT OR IGNORE INTO "cursos" ("slug", "nome", "descricao")
+      VALUES (?, ?, ?)
+    `,
+      )
+      .run(slug, nome, descricao);
+  } catch (error) {
+    console.error("Erro ao criar curso:", error);
+    return null;
+  }
+}
 
-const produto = db
-  .prepare(/*sql*/ `SELECT * FROM "produtos" WHERE slug = 'mouse'`)
-  .get();
-console.log(produto);
+export function criarAula({ slug, nome, cursoSlug }) {
+  try {
+    return db
+      .prepare(
+        /*sql*/ `
+      INSERT OR IGNORE INTO "aulas" ("slug", "nome", "curso_id")
+      VALUES (?, ?, (SELECT "id" FROM "cursos" WHERE "slug" = ?))
+    `,
+      )
+      .run(slug, nome, cursoSlug);
+  } catch (error) {
+    console.error("Erro ao criar aula:", error);
+    return null;
+  }
+}
+
+export function pegarCursos() {
+  try {
+    return db.prepare(/*sql*/ `SELECT * FROM "cursos"`).all();
+  } catch (error) {
+    console.error("Erro ao pegar cursos:", error);
+    return null;
+  }
+}
+
+export function pegarCurso(slug) {
+  try {
+    return db
+      .prepare(/*sql*/ `SELECT * FROM "cursos" WHERE "slug" = ?`)
+      .get(slug);
+  } catch (error) {
+    console.error("Erro ao pegar curso:", error);
+    return null;
+  }
+}
+
+export function pegarAulas(cursoSlug) {
+  try {
+    return db
+      .prepare(
+        /*sql*/ `
+      SELECT a.* FROM "aulas" a
+      JOIN "cursos" c ON a.curso_id = c.id
+      WHERE c.slug = ?
+    `,
+      )
+      .all(cursoSlug);
+  } catch (error) {
+    console.error("Erro ao pegar aulas:", error);
+    return null;
+  }
+}
+
+export function pegarAula(cursoSlug, aulaSlug) {
+  try {
+    return db
+      .prepare(
+        /*sql*/ `
+      SELECT a.* FROM "aulas" a
+      JOIN "cursos" c ON a.curso_id = c.id
+      WHERE c.slug = ? AND a.slug = ?
+    `,
+      )
+      .get(cursoSlug, aulaSlug);
+  } catch (error) {
+    console.error("Erro ao pegar aula:", error);
+    return null;
+  }
+}
